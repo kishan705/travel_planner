@@ -1,13 +1,14 @@
 from flask import Flask, render_template, request, jsonify
 # Import your specific functions and data
 from graph_logic import build_graph, find_shortest_path
-from city_data import CITIES, get_coordinates # Assumes city_data.py has a CITIES list
+from city_data import CITY_DATA, get_coordinatesfrom city_data import CITY_DATA, get_coordinates
 
 app = Flask(__name__)
 
 # --- Build the Graph and Coordinates Dictionary on Startup ---
 print("Building city graph...")
-CITY_GRAPH = build_graph(CITIES) # Create the graph object
+all_cities = list(CITY_DATA.keys())
+CITY_GRAPH = build_graph(all_cities)
 print("Graph built successfully!")
 
 # Create a dictionary of coordinates for the frontend to use
