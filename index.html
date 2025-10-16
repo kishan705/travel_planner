@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Travel Route Planner</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+    <style>
+        body { font-family: sans-serif; background-color: #111; color: #fff; margin: 0; padding: 20px; text-align: center; }
+        #map { height: 60vh; width: 90%; max-width: 1200px; margin: 20px auto; border-radius: 8px; border: 2px solid #64ffda; }
+        .controls { background-color: #222; padding: 20px; border-radius: 8px; max-width: 1200px; margin: auto; }
+        h1, label { color: #64ffda; }
+        input { padding: 8px; margin: 5px; border-radius: 4px; border: 1px solid #8892b0; background-color: #111; color: #fff; }
+        button { padding: 8px 15px; background-color: #64ffda; color: #000; border: none; border-radius: 4px; cursor: pointer; }
+        .leaflet-tile { filter: invert(1) hue-rotate(180deg) brightness(0.9) contrast(0.9); }
+    </style>
+</head>
+<body>
+
+    <div class="controls">
+        <h1>Travel Route Planner</h1>
+        <form id="route-form">
+            <label for="start">Start Node:</label>
+            <input type="text" id="start" name="start" required placeholder="e.g., A">
+            <label for="end">End Node:</label>
+            <input type="text" id="end" name="end" required placeholder="e.g., C">
+            <button type="submit">Find Route</button>
+        </form>
+    </div>
+
+    <div id="map"></div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        const map = L.map('map').setView([26.5, 81.0], 7);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+
+        let currentRouteLayer = null;
+
+        document.getElementById('route-form').addEventListener('submit', async function(event) {
+            event.preventDefault();
+            const startNode = document.getElementById('start').value.toUpperCase();
+            const endNode = document.getElementById('end').value.toUpperCase();
+
+            if (currentRouteLayer) map.removeLayer(currentRouteLayer);
+
+            try {
+                const response = await fetch('/calculate_route', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ start: startNode, end: endNode })
+                });
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error);
+                }
+                const data = await response.json();
+                const routeCoordinates = data.route;
+                if (routeCoordinates && routeCoordinates.length > 0) {
+                    const polyline = L.polyline(routeCoordinates, { color: '#64ffda', weight: 5 });
+                    currentRouteLayer = L.layerGroup([polyline]).addTo(map);
+                    map.fitBounds(polyline.getBounds().pad(0.1));
+                } else {
+                    alert('No route found.');
+                }
+            } catch (error) {
+                alert(`Failed to find route: ${error.message}`);
+            }
+        });
+    </script>
+</body>
+</html>
